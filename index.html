@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt Template Editor</title>
+<meta name="description" content="A visual editor for Prompt Library JSON templates. Import, edit, and export prompt cards with an intuitive interface.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-primary: #0f1117;
+  --bg-secondary: #161822;
+  --bg-card: #1c1f2e;
+  --bg-card-hover: #232740;
+  --bg-input: #12141f;
+  --bg-glass: rgba(28, 31, 46, 0.7);
+  --border: #2a2e42;
+  --border-focus: #6366f1;
+  --border-accent: #818cf8;
+  --text-primary: #e8eaed;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --accent: #6366f1;
+  --accent-hover: #818cf8;
+  --accent-glow: rgba(99, 102, 241, 0.25);
+  --success: #34d399;
+  --success-bg: rgba(52, 211, 153, 0.1);
+  --warning: #fbbf24;
+  --warning-bg: rgba(251, 191, 36, 0.1);
+  --danger: #f87171;
+  --danger-bg: rgba(248, 113, 113, 0.1);
+  --system-badge: #818cf8;
+  --system-badge-bg: rgba(129, 140, 248, 0.12);
+  --locked-badge: #f59e0b;
+  --locked-badge-bg: rgba(245, 158, 11, 0.12);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 14px rgba(0,0,0,0.35);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,0.4);
+  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+html { font-size: 15px; scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ── Layout ── */
+.app-container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 20px 80px;
+}
+
+/* ── Header ── */
+.app-header {
+  text-align: center;
+  margin-bottom: 32px;
+  padding: 40px 20px 32px;
+  position: relative;
+}
+
+.app-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+  border-radius: 2px;
+}
+
+.app-header h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #e0e7ff 0%, #a5b4fc 50%, #818cf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+
+.app-header p {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 400;
+}
+
+/* ── Toolbar ── */
+.toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.toolbar-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--accent-glow), transparent);
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.toolbar-btn:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+
+.toolbar-btn:hover::before { opacity: 1; }
+
+.toolbar-btn:active { transform: translateY(0); }
+
+.toolbar-btn svg { width: 18px; height: 18px; position: relative; z-index: 1; }
+.toolbar-btn span { position: relative; z-index: 1; }
+
+.toolbar-btn.primary {
+  background: linear-gradient(135deg, var(--accent), #4f46e5);
+  border-color: transparent;
+  color: #fff;
+}
+
+.toolbar-btn.primary:hover {
+  background: linear-gradient(135deg, var(--accent-hover), #6366f1);
+  box-shadow: 0 4px 20px var(--accent-glow);
+}
+
+.toolbar-btn.success {
+  background: linear-gradient(135deg, #059669, #047857);
+  border-color: transparent;
+  color: #fff;
+}
+
+.toolbar-btn.success:hover {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.25);
+}
+
+.toolbar-btn.danger-outline {
+  border-color: rgba(248, 113, 113, 0.3);
+  color: var(--danger);
+}
+
+.toolbar-btn.danger-outline:hover {
+  border-color: var(--danger);
+  background: var(--danger-bg);
+  box-shadow: 0 4px 16px rgba(248, 113, 113, 0.15);
+}
+
+#importFile { display: none; }
+
+/* ── Section ── */
+.section {
+  margin-bottom: 28px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-header h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.section-header .badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: var(--system-badge-bg);
+  color: var(--system-badge);
+  letter-spacing: 0.03em;
+}
+
+/* ── Form Fields ── */
+.field-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.field-group.full { grid-template-columns: 1fr; }
+.field-group.triple { grid-template-columns: 1fr 1fr 1fr; }
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.field label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 9px 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  transition: all var(--transition);
+  outline: none;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.field input:disabled,
+.field select:disabled,
+.field textarea:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: rgba(18, 20, 31, 0.5);
+}
+
+.field textarea {
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+  line-height: 1.55;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.field select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+  cursor: pointer;
+}
+
+.char-count {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-align: right;
+  font-family: var(--font-mono);
+}
+
+.char-count.over { color: var(--danger); font-weight: 600; }
+
+/* ── Prompt Card ── */
+.card-list { display: flex; flex-direction: column; gap: 12px; }
+
+.prompt-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all var(--transition);
+}
+
+.prompt-card:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: var(--shadow-md);
+}
+
+.prompt-card.locked {
+  border-left: 3px solid var(--locked-badge);
+}
+
+.prompt-card.locked:hover {
+  border-color: rgba(245, 158, 11, 0.35);
+  border-left-color: var(--locked-badge);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--transition);
+}
+
+.card-header:hover { background: var(--bg-card-hover); }
+
+.card-toggle {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: transform var(--transition), color var(--transition);
+  flex-shrink: 0;
+}
+
+.prompt-card.expanded .card-toggle { transform: rotate(90deg); color: var(--accent); }
+
+.card-title {
+  flex: 1;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.card-title .card-id {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--bg-input);
+  padding: 1px 7px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.card-title .card-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-badges {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.card-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.card-badge.system { background: var(--system-badge-bg); color: var(--system-badge); }
+.card-badge.locked { background: var(--locked-badge-bg); color: var(--locked-badge); }
+.card-badge.enabled { background: var(--success-bg); color: var(--success); }
+.card-badge.disabled { background: var(--danger-bg); color: var(--danger); }
+
+.card-enabled-toggle {
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: background var(--transition);
+  flex-shrink: 0;
+}
+
+.card-enabled-toggle.on { background: var(--accent); }
+.card-enabled-toggle.off { background: var(--border); }
+
+.card-enabled-toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform var(--transition);
+}
+
+.card-enabled-toggle.on::after { transform: translateX(18px); }
+
+.card-body {
+  display: none;
+  padding: 0 18px 18px;
+  animation: slideDown 0.25s ease;
+}
+
+.prompt-card.expanded .card-body { display: block; }
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  justify-content: flex-end;
+}
+
+.card-action-btn {
+  padding: 7px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card-action-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.card-action-btn.delete:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+/* ── Add Card Button ── */
+.add-card-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 16px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  margin-top: 12px;
+}
+
+.add-card-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-glow);
+}
+
+/* ── Toast ── */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  font-weight: 500;
+  box-shadow: var(--shadow-lg);
+  animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+  backdrop-filter: blur(12px);
+}
+
+.toast.success { border-color: var(--success); }
+.toast.error { border-color: var(--danger); }
+.toast.info { border-color: var(--accent); }
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes toastOut {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(40px); }
+}
+
+/* ── Empty State ── */
+.empty-state {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--text-muted);
+}
+
+.empty-state svg {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 16px;
+  opacity: 0.4;
+}
+
+.empty-state h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text-secondary);
+}
+
+.empty-state p { font-size: 0.85rem; }
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 480px;
+  padding: 28px;
+  box-shadow: var(--shadow-lg);
+  animation: modalIn 0.25s ease;
+}
+
+.modal h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 18px;
+  color: var(--text-primary);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ── Drag ── */
+.prompt-card.dragging {
+  opacity: 0.4;
+  border-style: dashed;
+}
+
+.prompt-card.drag-over {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  html { font-size: 14px; }
+  .app-container { padding: 14px 12px 80px; }
+  .app-header { padding: 28px 12px 24px; }
+  .app-header h1 { font-size: 1.5rem; }
+  .toolbar { gap: 8px; }
+  .toolbar-btn { padding: 9px 14px; font-size: 0.82rem; }
+  .field-group { grid-template-columns: 1fr; }
+  .field-group.triple { grid-template-columns: 1fr; }
+  .card-header { padding: 12px 14px; flex-wrap: wrap; }
+  .card-body { padding: 0 14px 14px; }
+  .card-title { font-size: 0.85rem; }
+  .card-badges { order: 3; width: 100%; margin-top: 4px; }
+  .section-header { flex-wrap: wrap; }
+}
+
+@media (min-width: 641px) and (max-width: 900px) {
+  .field-group.triple { grid-template-columns: 1fr 1fr; }
+}
+
+/* ── Utility ── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  border: 0;
+}
+
+.order-index-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.order-index-inline input {
+  width: 52px;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  text-align: center;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.order-index-inline input:focus {
+  border-color: var(--border-focus);
+}
+
+/* ── Metadata Card ── */
+.metadata-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+</style>
+</head>
+<body>
+
+<div class="app-container" id="app">
+  <!-- Header -->
+  <header class="app-header">
+    <h1>⚙ Prompt Template Editor</h1>
+    <p>匯入、編輯並匯出 Prompt Library JSON 範本</p>
+  </header>
+
+  <!-- Toolbar -->
+  <div class="toolbar" id="toolbar">
+    <label class="toolbar-btn primary" for="importFile" id="importLabel">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>匯入 JSON</span>
+    </label>
+    <input type="file" id="importFile" accept=".json,application/json">
+
+    <button class="toolbar-btn success" id="exportBtn" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <span>匯出 JSON</span>
+    </button>
+
+    <button class="toolbar-btn" id="addCardBtn" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      <span>新增卡片</span>
+    </button>
+  </div>
+
+  <!-- Content Area -->
+  <div id="editorContent">
+    <div class="empty-state" id="emptyState">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <h3>尚未載入範本</h3>
+      <p>請點擊「匯入 JSON」按鈕來載入 Prompt Template 檔案</p>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+/* ════════════════════════════════════════════════════
+   Prompt Template Editor — Single-file Application
+   ════════════════════════════════════════════════════ */
+
+const LOCKED_IDS = ['persona', 'world_info_before_char', 'character_card', 'world_info_after_char', 'chat_history'];
+const CONTENT_MAX_LENGTH = 4000;
+
+let appData = null; // holds the full JSON object
+
+// ── DOM refs ──
+const importFileEl = document.getElementById('importFile');
+const exportBtn = document.getElementById('exportBtn');
+const addCardBtn = document.getElementById('addCardBtn');
+const editorContent = document.getElementById('editorContent');
+const emptyState = document.getElementById('emptyState');
+const toastContainer = document.getElementById('toastContainer');
+
+// ── Toast ──
+function showToast(message, type = 'info') {
+  const icons = {
+    success: '✓',
+    error: '✕',
+    info: 'ℹ'
+  };
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span>${icons[type] || ''}</span> ${escapeHtml(message)}`;
+  toastContainer.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ── Import ──
+importFileEl.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!data.prompt_cards || !data.metadata) {
+        throw new Error('JSON 缺少 prompt_cards 或 metadata 欄位');
+      }
+      appData = data;
+      renderAll();
+      exportBtn.disabled = false;
+      addCardBtn.disabled = false;
+      showToast('範本匯入成功', 'success');
+    } catch (err) {
+      showToast('匯入失敗：' + err.message, 'error');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+// ── Export ──
+exportBtn.addEventListener('click', () => {
+  if (!appData) return;
+  // update updated_at for all cards
+  // (already updated on each field change)
+  const blob = new Blob([JSON.stringify(appData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const name = appData.metadata.name || 'prompt_template';
+  a.download = name.replace(/[^a-zA-Z0-9_\-\u4e00-\u9fff]/g, '_') + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('已匯出 JSON 檔案', 'success');
+});
+
+// ── Add Card ──
+addCardBtn.addEventListener('click', () => {
+  if (!appData) return;
+  const now = new Date().toISOString();
+  const newCard = {
+    id: 'new_card_' + Date.now(),
+    library_id: appData.prompt_cards.length > 0 ? appData.prompt_cards[0].library_id : '',
+    name: '新卡片',
+    content: '',
+    role: 'system',
+    placement: 'sequence',
+    history_depth: null,
+    order_index: getNextOrderIndex(),
+    enabled: true,
+    is_system: false,
+    trigger_keywords: [],
+    trigger_probability: 1.0,
+    created_at: now,
+    updated_at: now
+  };
+  appData.prompt_cards.push(newCard);
+  renderAll();
+  // Expand the new card
+  const cards = document.querySelectorAll('.prompt-card');
+  const last = cards[cards.length - 1];
+  if (last) {
+    last.classList.add('expanded');
+    last.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  showToast('已新增卡片', 'success');
+});
+
+function getNextOrderIndex() {
+  if (!appData || appData.prompt_cards.length === 0) return 0;
+  return Math.min(9999, Math.max(...appData.prompt_cards.map(c => c.order_index)) + 1);
+}
+
+// ── Render All ──
+function renderAll() {
+  editorContent.innerHTML = '';
+  if (!appData) {
+    editorContent.appendChild(emptyState);
+    return;
+  }
+  renderMetadata();
+  renderPromptCards();
+}
+
+// ── Render Metadata ──
+function renderMetadata() {
+  const section = document.createElement('section');
+  section.className = 'section';
+  section.innerHTML = `
+    <div class="section-header">
+      <h2>📋 Metadata</h2>
+      <span class="badge">基本資訊</span>
+    </div>
+    <div class="metadata-card">
+      <div class="field-group">
+        <div class="field">
+          <label for="meta-name">Name</label>
+          <input type="text" id="meta-name" value="${escapeAttr(appData.metadata.name || '')}" placeholder="範本名稱">
+        </div>
+        <div class="field">
+          <label for="meta-temp">Temperature</label>
+          <input type="number" id="meta-temp" value="${appData.metadata.temperature ?? 1.0}" min="0" max="2" step="0.01" placeholder="0.00 ~ 2.00">
+        </div>
+      </div>
+      <div class="field-group full">
+        <div class="field">
+          <label for="meta-desc">Description</label>
+          <input type="text" id="meta-desc" value="${escapeAttr(appData.metadata.description || '')}" placeholder="範本說明">
+        </div>
+      </div>
+    </div>
+  `;
+  editorContent.appendChild(section);
+
+  // Bind events
+  const nameInput = section.querySelector('#meta-name');
+  const descInput = section.querySelector('#meta-desc');
+  const tempInput = section.querySelector('#meta-temp');
+
+  nameInput.addEventListener('input', () => { appData.metadata.name = nameInput.value; });
+  descInput.addEventListener('input', () => { appData.metadata.description = descInput.value; });
+  tempInput.addEventListener('change', () => {
+    let v = parseFloat(tempInput.value);
+    if (isNaN(v) || v < 0) v = 0;
+    if (v > 2) v = 2;
+    v = Math.round(v * 100) / 100;
+    tempInput.value = v;
+    appData.metadata.temperature = v;
+  });
+}
+
+// ── Render Prompt Cards ──
+function renderPromptCards() {
+  const section = document.createElement('section');
+  section.className = 'section';
+  section.innerHTML = `
+    <div class="section-header">
+      <h2>🃏 Prompt Cards</h2>
+      <span class="badge">${appData.prompt_cards.length} 張卡片</span>
+    </div>
+  `;
+
+  const list = document.createElement('div');
+  list.className = 'card-list';
+  list.id = 'cardList';
+
+  // Sort by order_index for display
+  const sortedIndices = appData.prompt_cards
+    .map((c, i) => ({ card: c, idx: i }))
+    .sort((a, b) => a.card.order_index - b.card.order_index);
+
+  sortedIndices.forEach(({ card, idx }) => {
+    list.appendChild(createCardElement(card, idx));
+  });
+
+  section.appendChild(list);
+
+  // Add card button
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-card-btn';
+  addBtn.id = 'addCardBtnInline';
+  addBtn.innerHTML = `
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    新增 Prompt 卡片
+  `;
+  addBtn.addEventListener('click', () => addCardBtn.click());
+  section.appendChild(addBtn);
+
+  editorContent.appendChild(section);
+}
+
+// ── Create Card Element ──
+function createCardElement(card, dataIndex) {
+  const isLocked = LOCKED_IDS.includes(card.id);
+  const el = document.createElement('div');
+  el.className = `prompt-card${isLocked ? ' locked' : ''}`;
+  el.dataset.index = dataIndex;
+
+  // Header
+  const header = document.createElement('div');
+  header.className = 'card-header';
+  header.innerHTML = `
+    <div class="card-toggle">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <div class="card-title">
+      <span class="card-id">${escapeHtml(card.id)}</span>
+      <span class="card-name">${escapeHtml(card.name)}</span>
+    </div>
+    <div class="card-badges">
+      ${isLocked ? '<span class="card-badge locked">🔒 鎖定</span>' : ''}
+      ${card.is_system ? '<span class="card-badge system">SYSTEM</span>' : ''}
+    </div>
+    <div class="order-index-inline" title="Order Index">
+      #<input type="number" min="0" max="9999" step="1" value="${card.order_index}" class="order-input" data-idx="${dataIndex}" aria-label="Order Index">
+    </div>
+  `;
+
+  // Toggle expand
+  header.addEventListener('click', (e) => {
+    if (e.target.closest('.order-index-inline') || e.target.closest('.card-enabled-toggle')) return;
+    el.classList.toggle('expanded');
+  });
+
+  // Enabled toggle button
+  const toggle = document.createElement('button');
+  toggle.className = `card-enabled-toggle ${card.enabled ? 'on' : 'off'}`;
+  toggle.title = card.enabled ? '已啟用' : '已停用';
+  toggle.setAttribute('aria-label', 'Toggle enabled');
+  if (isLocked) toggle.disabled = true;
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (isLocked) return;
+    card.enabled = !card.enabled;
+    card.updated_at = new Date().toISOString();
+    toggle.className = `card-enabled-toggle ${card.enabled ? 'on' : 'off'}`;
+    toggle.title = card.enabled ? '已啟用' : '已停用';
+  });
+  header.appendChild(toggle);
+
+  el.appendChild(header);
+
+  // Order index input event
+  const orderInput = header.querySelector('.order-input');
+  orderInput.addEventListener('click', (e) => e.stopPropagation());
+  orderInput.addEventListener('change', () => {
+    let v = parseInt(orderInput.value, 10);
+    if (isNaN(v) || v < 0) v = 0;
+    if (v > 9999) v = 9999;
+    orderInput.value = v;
+    card.order_index = v;
+    card.updated_at = new Date().toISOString();
+  });
+
+  // Body
+  const body = document.createElement('div');
+  body.className = 'card-body';
+  body.innerHTML = buildCardBody(card, dataIndex, isLocked);
+  el.appendChild(body);
+
+  // Bind body events after append
+  setTimeout(() => bindCardBodyEvents(el, card, dataIndex, isLocked), 0);
+
+  return el;
+}
+
+function buildCardBody(card, idx, isLocked) {
+  const contentLen = (card.content || '').length;
+  const isHistoryPlacement = card.placement === 'history';
+
+  return `
+    <div class="field-group">
+      <div class="field">
+        <label>ID</label>
+        <input type="text" value="${escapeAttr(card.id)}" ${isLocked ? 'disabled' : ''} data-field="id" data-idx="${idx}" placeholder="英文字串，空格自動轉底線">
+      </div>
+      <div class="field">
+        <label>Name</label>
+        <input type="text" value="${escapeAttr(card.name)}" ${isLocked ? 'disabled' : ''} data-field="name" data-idx="${idx}" placeholder="卡片名稱">
+      </div>
+    </div>
+
+    <div class="field-group full">
+      <div class="field">
+        <label>Content</label>
+        <textarea rows="5" maxlength="4000" ${isLocked ? 'disabled' : ''} data-field="content" data-idx="${idx}" placeholder="輸入 Prompt 內容（上限 4000 字）">${escapeHtml(card.content || '')}</textarea>
+        <div class="char-count ${contentLen > CONTENT_MAX_LENGTH ? 'over' : ''}" data-counter="${idx}">${contentLen} / ${CONTENT_MAX_LENGTH}</div>
+      </div>
+    </div>
+
+    <div class="field-group triple">
+      <div class="field">
+        <label>Role</label>
+        <select ${isLocked ? 'disabled' : ''} data-field="role" data-idx="${idx}">
+          <option value="system" ${card.role === 'system' ? 'selected' : ''}>system</option>
+          <option value="user" ${card.role === 'user' ? 'selected' : ''}>user</option>
+          <option value="assistant" ${card.role === 'assistant' ? 'selected' : ''}>assistant</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Placement</label>
+        <select ${isLocked ? 'disabled' : ''} data-field="placement" data-idx="${idx}">
+          <option value="sequence" ${card.placement === 'sequence' ? 'selected' : ''}>sequence</option>
+          <option value="history" ${card.placement === 'history' ? 'selected' : ''}>history</option>
+          <option value="summary" ${card.placement === 'summary' ? 'selected' : ''}>summary</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>History Depth</label>
+        <input type="number" min="0" max="999" step="1"
+          value="${card.history_depth !== null && card.history_depth !== undefined ? card.history_depth : ''}"
+          ${(!isHistoryPlacement || isLocked) ? 'disabled' : ''}
+          data-field="history_depth" data-idx="${idx}"
+          placeholder="${isHistoryPlacement ? '0~999' : 'N/A'}">
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field">
+        <label>Enabled</label>
+        <select ${isLocked ? 'disabled' : ''} data-field="enabled" data-idx="${idx}">
+          <option value="true" ${card.enabled ? 'selected' : ''}>true</option>
+          <option value="false" ${!card.enabled ? 'selected' : ''}>false</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Order Index</label>
+        <input type="number" min="0" max="9999" step="1" value="${card.order_index}" data-field="order_index" data-idx="${idx}">
+      </div>
+    </div>
+
+    ${!isLocked ? `
+    <div class="card-actions">
+      <button class="card-action-btn" data-action="duplicate" data-idx="${idx}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        複製
+      </button>
+      <button class="card-action-btn delete" data-action="delete" data-idx="${idx}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        刪除
+      </button>
+    </div>` : ''}
+  `;
+}
+
+function bindCardBodyEvents(el, card, idx, isLocked) {
+  // Field inputs
+  el.querySelectorAll('[data-field]').forEach(input => {
+    const field = input.dataset.field;
+    const eventType = input.tagName === 'TEXTAREA' ? 'input' : (input.tagName === 'SELECT' ? 'change' : 'input');
+
+    input.addEventListener(eventType, () => {
+      const c = appData.prompt_cards[idx];
+      if (!c) return;
+
+      switch (field) {
+        case 'id':
+          if (!isLocked) {
+            c.id = input.value.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+            input.value = c.id;
+            // Update header display
+            const idSpan = el.querySelector('.card-id');
+            if (idSpan) idSpan.textContent = c.id;
+          }
+          break;
+        case 'name':
+          if (!isLocked) {
+            c.name = input.value;
+            const nameSpan = el.querySelector('.card-name');
+            if (nameSpan) nameSpan.textContent = c.name;
+          }
+          break;
+        case 'content':
+          if (!isLocked) {
+            c.content = input.value;
+            const counter = el.querySelector(`[data-counter="${idx}"]`);
+            if (counter) {
+              const len = c.content.length;
+              counter.textContent = `${len} / ${CONTENT_MAX_LENGTH}`;
+              counter.className = `char-count ${len > CONTENT_MAX_LENGTH ? 'over' : ''}`;
+            }
+          }
+          break;
+        case 'role':
+          if (!isLocked) c.role = input.value;
+          break;
+        case 'placement':
+          if (!isLocked) {
+            c.placement = input.value;
+            const depthInput = el.querySelector('[data-field="history_depth"]');
+            if (depthInput) {
+              if (input.value === 'history') {
+                depthInput.disabled = false;
+                depthInput.placeholder = '0~999';
+              } else {
+                depthInput.disabled = true;
+                depthInput.value = '';
+                depthInput.placeholder = 'N/A';
+                c.history_depth = null;
+              }
+            }
+          }
+          break;
+        case 'history_depth':
+          if (!isLocked && card.placement === 'history') {
+            let v = parseInt(input.value, 10);
+            if (isNaN(v) || v < 0) v = 0;
+            if (v > 999) v = 999;
+            c.history_depth = v;
+          }
+          break;
+        case 'enabled':
+          if (!isLocked) {
+            c.enabled = input.value === 'true';
+            // Sync header toggle
+            const headerToggle = el.querySelector('.card-enabled-toggle');
+            if (headerToggle) {
+              headerToggle.className = `card-enabled-toggle ${c.enabled ? 'on' : 'off'}`;
+              headerToggle.title = c.enabled ? '已啟用' : '已停用';
+            }
+          }
+          break;
+        case 'order_index': {
+          let v = parseInt(input.value, 10);
+          if (isNaN(v) || v < 0) v = 0;
+          if (v > 9999) v = 9999;
+          input.value = v;
+          c.order_index = v;
+          // Sync header order input
+          const headerOrder = el.querySelector('.order-input');
+          if (headerOrder && headerOrder !== input) headerOrder.value = v;
+          break;
+        }
+      }
+      c.updated_at = new Date().toISOString();
+    });
+  });
+
+  // Action buttons
+  el.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.action;
+      const i = parseInt(btn.dataset.idx, 10);
+      if (action === 'delete') {
+        showDeleteModal(i);
+      } else if (action === 'duplicate') {
+        duplicateCard(i);
+      }
+    });
+  });
+}
+
+// ── Duplicate Card ──
+function duplicateCard(idx) {
+  const src = appData.prompt_cards[idx];
+  if (!src) return;
+  const now = new Date().toISOString();
+  const dup = JSON.parse(JSON.stringify(src));
+  dup.id = src.id + '_copy';
+  dup.name = src.name + ' (副本)';
+  dup.is_system = false;
+  dup.created_at = now;
+  dup.updated_at = now;
+  dup.order_index = Math.min(9999, src.order_index + 1);
+  appData.prompt_cards.splice(idx + 1, 0, dup);
+  renderAll();
+  showToast('已複製卡片', 'success');
+}
+
+// ── Delete Modal ──
+function showDeleteModal(idx) {
+  const card = appData.prompt_cards[idx];
+  if (!card) return;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>確認刪除卡片</h3>
+      <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:8px;">
+        您確定要刪除 <strong style="color:var(--text-primary)">${escapeHtml(card.name)}</strong>（<code style="font-family:var(--font-mono);font-size:0.82rem;color:var(--accent)">${escapeHtml(card.id)}</code>）嗎？
+      </p>
+      <p style="color:var(--text-muted);font-size:0.82rem;">此操作無法復原。</p>
+      <div class="modal-actions">
+        <button class="toolbar-btn" id="modalCancel">取消</button>
+        <button class="toolbar-btn danger-outline" id="modalConfirm">刪除</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('#modalCancel').addEventListener('click', () => overlay.remove());
+  overlay.querySelector('#modalConfirm').addEventListener('click', () => {
+    appData.prompt_cards.splice(idx, 1);
+    overlay.remove();
+    renderAll();
+    showToast('已刪除卡片', 'info');
+  });
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.remove();
+  });
+}
+
+// ── Escape attribute ──
+function escapeAttr(s) {
+  return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+</script>
+</body>
+</html>
